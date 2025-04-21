@@ -1,0 +1,6 @@
+env         = "dev"
+prefix      = "awareson"
+db_admin    = "adminuser"
+db_password = "Hasloooo123"
+docker_image = "yourdockerhubuser/flask-app:latest"
+subscription_id = "79d7ed6f-4bc1-4b8a-946b-893c21e7a8d3"
