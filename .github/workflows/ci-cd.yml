@@ -1,0 +1,50 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Terraform Init & Apply
+      run: |
+        cd terraform
+        terraform init
+        terraform apply -auto-approve
+      env:
+        ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+        ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+    - name: Build Docker image
+      run: docker build -t ${{ secrets.REGISTRY_URL }}/sample-app:${{ github.sha }} .
+
+    - name: Push to Registry
+      run: |
+        echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_URL }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
+        docker push ${{ secrets.REGISTRY_URL }}/sample-app:${{ github.sha }}
+
+    - name: Deploy to Azure App Service
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: YOUR_APP_NAME
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        images: ${{ secrets.REGISTRY_URL }}/sample-app:${{ github.sha }}
+
+    - name: Run Health Check
+      run: curl --fail http://<app-url>/health/db

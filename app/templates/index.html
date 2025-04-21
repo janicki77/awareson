@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Flask Message Board</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 1rem;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            margin-bottom: 2rem;
+        }
+        input[type="text"] {
+            width: 80%;
+            padding: 8px;
+            margin-right: 10px;
+        }
+        input[type="submit"] {
+            padding: 8px 16px;
+        }
+        ul {
+            padding-left: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Message Board</h1>
+    <form action="/submit" method="post">
+        <input type="text" name="message" placeholder="Write your message here" required>
+        <input type="submit" value="Send">
+    </form>
+
+    <h2>Messages:</h2>
+    <ul>
+        {% for message in messages %}
+            <li>{{ message[0] }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
