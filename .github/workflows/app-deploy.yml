@@ -5,6 +5,7 @@ on:
     paths:
       - 'app/**'
       - '.github/workflows/app-deploy.yml'
+  workflow_dispatch:
 
 env:
   ACR_NAME: myappacr12345
