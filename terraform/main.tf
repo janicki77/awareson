@@ -2,6 +2,15 @@ provider "azurerm" {
   features {}
 }
 
+terraform {
+  backend "azurerm" {
+    use_azuread_auth = true
+    storage_account_name = "tfstate-awareson-123"
+    container_name = "tfstate"
+    key = "dev.terraform.tfstate"
+  }
+}
+
 resource "azurerm_resource_group" "main" {
   name     = var.resource_group_name
   location = var.location
@@ -14,8 +23,8 @@ resource "azurerm_virtual_network" "main" {
   resource_group_name = azurerm_resource_group.main.name
 }
 
-resource "azurerm_subnet" "mysql" {
-  name                 = "mysql-subnet"
+resource "azurerm_subnet" "mysql_delegated" {
+  name                 = "mysql-delegated-subnet"
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.1.0/24"]
@@ -28,6 +37,13 @@ resource "azurerm_subnet" "mysql" {
   }
 }
 
+resource "azurerm_subnet" "mysql_pe" {
+  name                 = "mysql-pe-subnet"
+  resource_group_name  = azurerm_resource_group.main.name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = ["10.0.2.0/24"]
+}
+
 resource "azurerm_mysql_flexible_server" "main" {
   name                   = var.mysql_server_name
   resource_group_name    = azurerm_resource_group.main.name
@@ -36,7 +52,7 @@ resource "azurerm_mysql_flexible_server" "main" {
   administrator_password = var.mysql_password
   sku_name               = "B_Standard_B1ms"
   version                = "8.0.21"
-  delegated_subnet_id    = azurerm_subnet.mysql.id
+  delegated_subnet_id    = azurerm_subnet.mysql_delegated.id
   private_dns_zone_id    = null
 }
 
@@ -52,7 +68,7 @@ resource "azurerm_private_endpoint" "mysql" {
   name                = "mysql-pe"
   location            = var.location
   resource_group_name = azurerm_resource_group.main.name
-  subnet_id           = azurerm_subnet.mysql.id
+  subnet_id           = azurerm_subnet.mysql_pe.id
 
   private_service_connection {
     name                           = "mysql-connection"
