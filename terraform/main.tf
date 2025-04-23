@@ -38,6 +38,8 @@ resource "azurerm_mysql_flexible_server" "main" {
   version                = "8.0.21"
   delegated_subnet_id    = azurerm_subnet.mysql.id
   private_dns_zone_id    = null
+
+  depends_on = [ azurerm_app_service.main ]
 }
 
 resource "azurerm_mysql_flexible_database" "db" {
@@ -100,4 +102,6 @@ resource "azurerm_app_service" "main" {
     MYSQL_DB       = var.mysql_db_name
     WEBSITES_PORT  = 5000
   }
+  
+  depends_on = [ azurerm_container_registry.acr ]
 }
