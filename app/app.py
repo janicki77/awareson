@@ -4,6 +4,22 @@ import os
 
 app = Flask(__name__)
 
+@app.route('/initdb')
+def init_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255) NOT NULL
+        )
+    ''')
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return "Database initialized."
+
+
 def get_db_connection():
     return mysql.connector.connect(
         host=os.getenv("MYSQL_HOST"),
