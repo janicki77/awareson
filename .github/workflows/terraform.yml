@@ -51,6 +51,9 @@ jobs:
         working-directory: ./terraform
 
     steps:
+      - name : Manual approve
+        uses: trstringer/manual-approval@v1
+
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -66,5 +69,5 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Apply (Requires Approval)
+      - name: Terraform Apply
         run: terraform apply -auto-approve tfplan

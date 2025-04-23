@@ -8,6 +8,14 @@ resource "azurerm_resource_group" "main" {
   location = var.location
 }
 
+resource "azurerm_container_registry" "acr" {
+  name                = "${var.prefix}acr"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  sku                 = "Basic"
+  admin_enabled       = true
+}
+
 resource "azurerm_virtual_network" "vnet" {
   name                = "${var.prefix}-vnet-${var.env}"
   address_space       = ["10.0.0.0/16"]
@@ -92,5 +100,10 @@ resource "azurerm_app_service" "app" {
     DB_USER           = "${var.db_admin}@${azurerm_mysql_flexible_server.mysql.name}"
     DB_PASSWORD       = var.db_password
     DB_NAME           = "flaskdb"
+
+    WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
+    DOCKER_REGISTRY_SERVER_URL          = "https://${azurerm_container_registry.acr.login_server}"
+    DOCKER_REGISTRY_SERVER_USERNAME     = azurerm_container_registry.acr.admin_username
+    DOCKER_REGISTRY_SERVER_PASSWORD     = azurerm_container_registry.acr.admin_password
   }
 }

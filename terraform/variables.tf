@@ -21,3 +21,14 @@ variable "docker_image" {
 variable "mysql_version" {
   default = "8.0.21"
 }
+
+variable "image_name" {
+  description = "The Docker image name"
+  type        = string
+}
+
+variable "image_tag" {
+  description = "The Docker image tag"
+  type        = string
+  default     = "latest"
+}
