@@ -1,8 +1,6 @@
 name: Terraform Plan and Apply
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       env:
@@ -57,9 +55,6 @@ jobs:
         working-directory: ./terraform
 
     steps:
-      - name : Manual approve
-        uses: trstringer/manual-approval@v1
-
       - name: Checkout repository
         uses: actions/checkout@v3
 
