@@ -4,7 +4,6 @@ provider "azurerm" {
 
 terraform {
   backend "azurerm" {
-    use_azuread_auth = true
     resource_group_name  = "tfstate"
     storage_account_name = "tfstateawareson123"
     container_name = "tfstate"
