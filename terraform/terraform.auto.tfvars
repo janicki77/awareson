@@ -1,4 +1,4 @@
-resource_group_name = "myapp-rg"
+resource_group_name = "awareson"
 location            = "westeurope"
 mysql_server_name   = "myappmysqlsrv"
 mysql_admin         = "mysqladmin"
