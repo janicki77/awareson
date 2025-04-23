@@ -5,7 +5,7 @@ provider "azurerm" {
 terraform {
   backend "azurerm" {
     use_azuread_auth = true
-    storage_account_name = "tfstate-awareson-123"
+    storage_account_name = "tfstateawareson123"
     container_name = "tfstate"
     key = "dev.terraform.tfstate"
   }
