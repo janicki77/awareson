@@ -64,20 +64,6 @@ resource "azurerm_mysql_flexible_database" "db" {
   collation           = "utf8_general_ci"
 }
 
-resource "azurerm_private_endpoint" "mysql" {
-  name                = "mysql-pe"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.main.name
-  subnet_id           = azurerm_subnet.mysql_pe.id
-
-  private_service_connection {
-    name                           = "mysql-connection"
-    private_connection_resource_id = azurerm_mysql_flexible_server.main.id
-    subresource_names              = ["mysqlServer"]
-    is_manual_connection           = false
-  }
-}
-
 resource "azurerm_container_registry" "acr" {
   name                = var.acr_name
   resource_group_name = azurerm_resource_group.main.name
