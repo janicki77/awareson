@@ -1,35 +1,38 @@
 from flask import Flask, render_template, request
-from db import get_connection
+import mysql.connector
+import os
 
 app = Flask(__name__)
 
-@app.route('/')
+def get_db_connection():
+    return mysql.connector.connect(
+        host=os.getenv("MYSQL_HOST"),
+        user=os.getenv("MYSQL_USER"),
+        password=os.getenv("MYSQL_PASSWORD"),
+        database=os.getenv("MYSQL_DB")
+    )
+
+@app.route('/', methods=['GET', 'POST'])
 def index():
-    conn = get_connection()
+    conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT message FROM messages")
-    messages = cursor.fetchall()
+    if request.method == 'POST':
+        name = request.form['name']
+        cursor.execute("INSERT INTO users (name) VALUES (%s)", (name,))
+        conn.commit()
+    cursor.execute("SELECT name FROM users")
+    users = cursor.fetchall()
     conn.close()
-    return render_template('index.html', messages=messages)
+    return render_template('index.html', users=users)
 
-@app.route('/submit', methods=['POST'])
-def submit():
-    message = request.form['message']
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO messages (message) VALUES (%s)", (message,))
-    conn.commit()
-    conn.close()
-    return ('', 204)
-
-@app.route('/health/db')
+@app.route('/health')
 def health():
     try:
-        conn = get_connection()
+        conn = get_db_connection()
         conn.close()
-        return "Database connected", 200
+        return 'OK', 200
     except:
-        return "Database connection failed", 500
+        return 'DB connection failed', 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

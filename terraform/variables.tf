@@ -1,34 +1,31 @@
+variable "resource_group_name" {
+  default = "myapp-rg"
+}
+
 variable "location" {
   default = "westeurope"
 }
 
-variable "prefix" {
-  default = "flaskapp"
+variable "mysql_server_name" {
+  default = "myappmysqlsrv"
 }
 
-variable "env" {
-  description = "Environment name (dev, staging, prod)"
-  default     = "dev"
+variable "mysql_admin" {
+  default = "mysqladmin"
 }
 
-variable "db_admin" {}
-variable "db_password" {}
-
-variable "docker_image" {
-  description = "Docker image for the App Service"
+variable "mysql_password" {
+  default = "P@ssword1234!"
 }
 
-variable "mysql_version" {
-  default = "8.0.21"
+variable "mysql_db_name" {
+  default = "appdb"
 }
 
-variable "image_name" {
-  description = "The Docker image name"
-  type        = string
+variable "acr_name" {
+  default = "myappacr12345"
 }
 
-variable "image_tag" {
-  description = "The Docker image tag"
-  type        = string
-  default     = "latest"
+variable "app_name" {
+  default = "myapp-service"
 }

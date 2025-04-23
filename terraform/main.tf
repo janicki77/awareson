@@ -1,32 +1,23 @@
 provider "azurerm" {
   features {}
-
 }
 
 resource "azurerm_resource_group" "main" {
-  name     = "${var.prefix}-rg-${var.env}"
+  name     = var.resource_group_name
   location = var.location
 }
 
-resource "azurerm_container_registry" "acr" {
-  name                = "${var.prefix}acr"
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
-  sku                 = "Basic"
-  admin_enabled       = true
-}
-
-resource "azurerm_virtual_network" "vnet" {
-  name                = "${var.prefix}-vnet-${var.env}"
+resource "azurerm_virtual_network" "main" {
+  name                = "vnet-dev"
   address_space       = ["10.0.0.0/16"]
   location            = var.location
   resource_group_name = azurerm_resource_group.main.name
 }
 
-resource "azurerm_subnet" "db_subnet" {
-  name                 = "db-subnet"
+resource "azurerm_subnet" "mysql" {
+  name                 = "mysql-subnet"
   resource_group_name  = azurerm_resource_group.main.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
+  virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.1.0/24"]
   delegation {
     name = "delegation"
@@ -37,73 +28,76 @@ resource "azurerm_subnet" "db_subnet" {
   }
 }
 
-resource "azurerm_mysql_flexible_server" "mysql" {
-  name                   = "${var.prefix}-mysql-${var.env}"
-  location               = var.location
+resource "azurerm_mysql_flexible_server" "main" {
+  name                   = var.mysql_server_name
   resource_group_name    = azurerm_resource_group.main.name
-  administrator_login    = var.db_admin
-  administrator_password = var.db_password
-  sku_name               = "GP_Standard_D2ds_v4"
-  version                = var.mysql_version
-  delegated_subnet_id    = azurerm_subnet.db_subnet.id
-  private_dns_zone_id    = azurerm_private_dns_zone.mysql.id
-  zone                   = "1"
+  location               = var.location
+  administrator_login    = var.mysql_admin
+  administrator_password = var.mysql_password
+  sku_name               = "B_Standard_B1ms"
+  version                = "8.0.21"
+  delegated_subnet_id    = azurerm_subnet.mysql.id
+  private_dns_zone_id    = null
 }
 
-resource "azurerm_private_dns_zone" "mysql" {
-  name                = "privatelink.mysql.database.azure.com"
+resource "azurerm_mysql_flexible_database" "db" {
+  name                = var.mysql_db_name
   resource_group_name = azurerm_resource_group.main.name
+  server_name         = azurerm_mysql_flexible_server.main.name
+  charset             = "utf8"
+  collation           = "utf8_general_ci"
 }
 
-resource "azurerm_private_dns_zone_virtual_network_link" "mysql_link" {
-  name                  = "mysql-link"
-  resource_group_name   = azurerm_resource_group.main.name
-  private_dns_zone_name = azurerm_private_dns_zone.mysql.name
-  virtual_network_id    = azurerm_virtual_network.vnet.id
-}
-
-resource "azurerm_private_endpoint" "mysql_pe" {
-  name                = "${var.prefix}-mysql-pe-${var.env}"
+resource "azurerm_private_endpoint" "mysql" {
+  name                = "mysql-pe"
   location            = var.location
   resource_group_name = azurerm_resource_group.main.name
-  subnet_id           = azurerm_subnet.db_subnet.id
+  subnet_id           = azurerm_subnet.mysql.id
 
   private_service_connection {
-    name                           = "mysql-priv-conn"
-    private_connection_resource_id = azurerm_mysql_flexible_server.mysql.id
+    name                           = "mysql-connection"
+    private_connection_resource_id = azurerm_mysql_flexible_server.main.id
     subresource_names              = ["mysqlServer"]
     is_manual_connection           = false
   }
 }
 
-resource "azurerm_service_plan" "plan" {
-  name                = "${var.prefix}-plan-${var.env}"
+resource "azurerm_container_registry" "acr" {
+  name                = var.acr_name
   resource_group_name = azurerm_resource_group.main.name
   location            = var.location
-  os_type             = "Linux"
-  sku_name            = "B1"
+  sku                 = "Basic"
+  admin_enabled       = true
 }
 
-resource "azurerm_app_service" "app" {
-  name                = "${var.prefix}-app-${var.env}"
+resource "azurerm_app_service_plan" "main" {
+  name                = "asp-dev"
   location            = var.location
   resource_group_name = azurerm_resource_group.main.name
-  app_service_plan_id = azurerm_service_plan.plan.id
+  kind                = "Linux"
+  reserved            = true
+
+  sku {
+    tier = "Basic"
+    size = "B1"
+  }
+}
+
+resource "azurerm_app_service" "main" {
+  name                = var.app_name
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  app_service_plan_id = azurerm_app_service_plan.main.id
 
   site_config {
-    linux_fx_version = "DOCKER|${var.docker_image}"
+    linux_fx_version = "DOCKER|${azurerm_container_registry.acr.login_server}/flask-app:latest"
   }
 
   app_settings = {
-    WEBSITES_PORT     = "5000"
-    DB_HOST           = azurerm_mysql_flexible_server.mysql.fqdn
-    DB_USER           = "${var.db_admin}@${azurerm_mysql_flexible_server.mysql.name}"
-    DB_PASSWORD       = var.db_password
-    DB_NAME           = "flaskdb"
-
-    WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
-    DOCKER_REGISTRY_SERVER_URL          = "https://${azurerm_container_registry.acr.login_server}"
-    DOCKER_REGISTRY_SERVER_USERNAME     = azurerm_container_registry.acr.admin_username
-    DOCKER_REGISTRY_SERVER_PASSWORD     = azurerm_container_registry.acr.admin_password
+    MYSQL_HOST     = azurerm_mysql_flexible_server.main.fqdn
+    MYSQL_USER     = var.mysql_admin
+    MYSQL_PASSWORD = var.mysql_password
+    MYSQL_DB       = var.mysql_db_name
+    WEBSITES_PORT  = 5000
   }
 }

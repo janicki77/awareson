@@ -1,74 +1,44 @@
-name: Terraform Plan and Apply
+name: Terraform Infrastructure
 
 on:
   workflow_dispatch:
-    inputs:
-      env:
-        description: 'Environment to deploy to (dev, staging, production)'
-        required: true
-        default: 'dev'
 
 env:
   ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
   ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-  TF_ENV: ${{ github.event.inputs.env }}
 
 jobs:
-  terraform-plan:
-    name: Terraform Plan (${{ github.env.TF_ENV }})
+  terraform:
+    name: Terraform Plan & Apply
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./terraform
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
 
-      - name: Terraform Init
-        run: terraform init -backend-config="key=${{ github.env.TF_ENV }}.tfstate"
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./terraform
 
-      - name: Terraform Validate
-        run: terraform validate
+    - name: Terraform Validate
+      run: terraform validate
+      working-directory: ./terraform
 
-      - name: Terraform Plan
-        run: terraform plan -out=tfplan
+    - name: Terraform Plan
+      run: terraform plan -out=tfplan
+      working-directory: ./terraform
 
-      - name: Upload Plan Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: tfplan-${{ github.env.TF_ENV }}
-          path: terraform/tfplan
+    - name: Wait for approval
+      uses: hmarr/auto-approve-action@v3.1.0
+      if: github.event_name == 'workflow_dispatch'
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 
-  terraform-apply:
-    name: Terraform Apply (${{ github.env.TF_ENV }})
-    needs: terraform-plan
-    runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.env }}
-    defaults:
-      run:
-        working-directory: ./terraform
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Download Plan Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: tfplan-${{ github.env.TF_ENV }}
-          path: ./terraform
-
-      - name: Terraform Init
-        run: terraform init
-
-      - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
+    - name: Terraform Apply
+      run: terraform apply -auto-approve tfplan
+      working-directory: ./terraform

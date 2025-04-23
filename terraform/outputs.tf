@@ -1,3 +1,3 @@
 output "app_url" {
-  value = azurerm_app_service.app.default_site_hostname
+  value = "https://${azurerm_app_service.main.default_site_hostname}"
 }

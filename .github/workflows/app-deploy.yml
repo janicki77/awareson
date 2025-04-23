@@ -1,0 +1,46 @@
+name: Docker Build & App Deploy
+
+on:
+  push:
+    paths:
+      - 'app/**'
+      - '.github/workflows/app-deploy.yml'
+
+env:
+  ACR_NAME: myappacr12345
+  ACR_LOGIN_SERVER: myappacr12345.azurecr.io
+  AZURE_WEBAPP_NAME: myapp-service
+  RESOURCE_GROUP: myapp-rg
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Login to ACR
+      run: az acr login --name $ACR_NAME
+
+    - name: Build and Push Docker image
+      run: |
+        docker build -t $ACR_LOGIN_SERVER/flask-app:latest ./app
+        docker push $ACR_LOGIN_SERVER/flask-app:latest
+
+    - name: Deploy to App Service
+      run: |
+        az webapp config container set \
+          --name $AZURE_WEBAPP_NAME \
+          --resource-group $RESOURCE_GROUP \
+          --docker-custom-image-name $ACR_LOGIN_SERVER/flask-app:latest \
+          --docker-registry-server-url https://$ACR_LOGIN_SERVER
+
+    - name: Test App Health
+      run: |
+        curl -f https://$AZURE_WEBAPP_NAME.azurewebsites.net/health
