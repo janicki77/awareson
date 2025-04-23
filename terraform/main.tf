@@ -37,11 +37,16 @@ resource "azurerm_subnet" "mysql_delegated" {
   }
 }
 
-resource "azurerm_subnet" "mysql_pe" {
-  name                 = "mysql-pe-subnet"
-  resource_group_name  = azurerm_resource_group.main.name
-  virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = ["10.0.2.0/24"]
+resource "azurerm_private_dns_zone" "mysql" {
+  name                = "privatelink.mysql.database.azure.com"
+  resource_group_name = azurerm_resource_group.main.name
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "mysql" {
+  name                  = "mysql-vnet-link"
+  resource_group_name   = azurerm_resource_group.main.name
+  private_dns_zone_name = azurerm_private_dns_zone.mysql.name
+  virtual_network_id    = azurerm_virtual_network.main.id
 }
 
 resource "azurerm_mysql_flexible_server" "main" {
@@ -53,7 +58,7 @@ resource "azurerm_mysql_flexible_server" "main" {
   sku_name               = "B_Standard_B1ms"
   version                = "8.0.21"
   delegated_subnet_id    = azurerm_subnet.mysql_delegated.id
-  private_dns_zone_id    = null
+  private_dns_zone_id    = azurerm_private_dns_zone.mysql.id
 }
 
 resource "azurerm_mysql_flexible_database" "db" {

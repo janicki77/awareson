@@ -5,12 +5,13 @@ on:
     paths:
       - 'app/**'
       - '.github/workflows/app-deploy.yml'
+  workflow_dispatch:
 
 env:
-  ACR_NAME: myappacr12345
-  ACR_LOGIN_SERVER: myappacr12345.azurecr.io
-  AZURE_WEBAPP_NAME: myapp-service
-  RESOURCE_GROUP: myapp-rg
+  ACR_NAME: myappacrawareson123
+  ACR_LOGIN_SERVER: myappacrawareson123.azurecr.io
+  AZURE_WEBAPP_NAME: myapp-service-awareson
+  RESOURCE_GROUP: awareson
 
 jobs:
   build-and-deploy:
