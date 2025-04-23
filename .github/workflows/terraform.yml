@@ -19,7 +19,7 @@ env:
 
 jobs:
   terraform-plan:
-    name: Terraform Plan (${{ env.TF_ENV }})
+    name: Terraform Plan (${{ github.env.TF_ENV }})
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -33,7 +33,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
-        run: terraform init -backend-config="key=${{ env.TF_ENV }}.tfstate"
+        run: terraform init -backend-config="key=${{ github.env.TF_ENV }}.tfstate"
 
       - name: Terraform Validate
         run: terraform validate
@@ -44,11 +44,11 @@ jobs:
       - name: Upload Plan Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tfplan-${{ env.TF_ENV }}
+          name: tfplan-${{ github.env.TF_ENV }}
           path: terraform/tfplan
 
   terraform-apply:
-    name: Terraform Apply (${{ env.TF_ENV }})
+    name: Terraform Apply (${{ github.env.TF_ENV }})
     needs: terraform-plan
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.env }}
@@ -69,7 +69,7 @@ jobs:
       - name: Download Plan Artifact
         uses: actions/download-artifact@v4
         with:
-          name: tfplan-${{ env.TF_ENV }}
+          name: tfplan-${{ github.env.TF_ENV }}
           path: ./terraform
 
       - name: Terraform Init
