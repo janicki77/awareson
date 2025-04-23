@@ -2,6 +2,15 @@ provider "azurerm" {
   features {}
 }
 
+terraform {
+  backend "azurerm" {
+    resource_group_name  = "tfstate"
+    storage_account_name = "tfstateawareson123"
+    container_name = "tfstate"
+    key = "dev.terraform.tfstate"
+  }
+}
+
 resource "azurerm_resource_group" "main" {
   name     = var.resource_group_name
   location = var.location
@@ -14,8 +23,8 @@ resource "azurerm_virtual_network" "main" {
   resource_group_name = azurerm_resource_group.main.name
 }
 
-resource "azurerm_subnet" "mysql" {
-  name                 = "mysql-subnet"
+resource "azurerm_subnet" "mysql_delegated" {
+  name                 = "mysql-delegated-subnet"
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.1.0/24"]
@@ -28,6 +37,13 @@ resource "azurerm_subnet" "mysql" {
   }
 }
 
+resource "azurerm_subnet" "mysql_pe" {
+  name                 = "mysql-pe-subnet"
+  resource_group_name  = azurerm_resource_group.main.name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = ["10.0.2.0/24"]
+}
+
 resource "azurerm_mysql_flexible_server" "main" {
   name                   = var.mysql_server_name
   resource_group_name    = azurerm_resource_group.main.name
@@ -36,7 +52,7 @@ resource "azurerm_mysql_flexible_server" "main" {
   administrator_password = var.mysql_password
   sku_name               = "B_Standard_B1ms"
   version                = "8.0.21"
-  delegated_subnet_id    = azurerm_subnet.mysql.id
+  delegated_subnet_id    = azurerm_subnet.mysql_delegated.id
   private_dns_zone_id    = null
 }
 
@@ -46,20 +62,6 @@ resource "azurerm_mysql_flexible_database" "db" {
   server_name         = azurerm_mysql_flexible_server.main.name
   charset             = "utf8"
   collation           = "utf8_general_ci"
-}
-
-resource "azurerm_private_endpoint" "mysql" {
-  name                = "mysql-pe"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.main.name
-  subnet_id           = azurerm_subnet.mysql.id
-
-  private_service_connection {
-    name                           = "mysql-connection"
-    private_connection_resource_id = azurerm_mysql_flexible_server.main.id
-    subresource_names              = ["mysqlServer"]
-    is_manual_connection           = false
-  }
 }
 
 resource "azurerm_container_registry" "acr" {
@@ -100,4 +102,6 @@ resource "azurerm_app_service" "main" {
     MYSQL_DB       = var.mysql_db_name
     WEBSITES_PORT  = 5000
   }
+
+  depends_on = [ azurerm_container_registry.acr, azurerm_mysql_flexible_database.db ]
 }

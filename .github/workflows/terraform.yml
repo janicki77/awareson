@@ -33,12 +33,6 @@ jobs:
       run: terraform plan -out=tfplan
       working-directory: ./terraform
 
-    - name: Wait for approval
-      uses: hmarr/auto-approve-action@v3.1.0
-      if: github.event_name == 'workflow_dispatch'
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-
     - name: Terraform Apply
       run: terraform apply -auto-approve tfplan
       working-directory: ./terraform
