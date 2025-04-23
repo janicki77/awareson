@@ -45,7 +45,7 @@ resource "azurerm_subnet" "appservice_subnet" {
 }
 
 resource "azurerm_app_service_virtual_network_swift_connection" "app_vnet" {
-  app_service_id = azurerm_app_service.app.id
+  app_service_id = azurerm_app_service.main.id
   subnet_id      = azurerm_subnet.appservice_subnet.id
 }
 
