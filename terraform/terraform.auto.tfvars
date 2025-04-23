@@ -1,5 +1,5 @@
 resource_group_name = "awareson"
-location            = "westeurope"
+location            = "eastus"
 mysql_server_name   = "myappmysqlsrv"
 mysql_admin         = "mysqladmin"
 mysql_password      = "P@ssword1234!"
